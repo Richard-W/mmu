@@ -1,0 +1,10 @@
+[package]
+name = "mmu"
+description = "Memory management unit abstractions"
+version = "0.1.0"
+authors = ["Richard Wiedenhöft <richard@wiedenhoeft.xyz>"]
+edition = "2018"
+license = "MIT"
+repository = "https://github.com/richard-w/mmu"
+
+[dependencies]
