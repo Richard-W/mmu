@@ -48,7 +48,7 @@ where
         if !entry.bit(Bit::Present) {
             let frame = (self.alloc_frame)()?;
             let addr = (self.translate_address)(frame);
-            let table = &mut *(addr as *mut PageTable);
+            let table = &mut *(addr.as_u64() as *mut PageTable);
             table.clear();
             entry.set_address(frame);
 
@@ -71,7 +71,7 @@ where
         self.ensure_subtable(entry)?;
         let phys_addr = entry.address();
         let virt_addr = (self.translate_address)(phys_addr);
-        Ok(&mut *(virt_addr as *mut PageTable))
+        Ok(&mut *(virt_addr.as_u64() as *mut PageTable))
     }
 
     /// Get the page table entry for a virtual address.
@@ -90,7 +90,7 @@ where
         assert!(level != 3 || virt_addr % PT2_EXTENT == 0);
         assert!(level != 4 || virt_addr % PT3_EXTENT == 0);
 
-        let virt_addr = virt_addr & !0xffff_0000_0000_0000;
+        let virt_addr = virt_addr.as_u64() & !0xffff_0000_0000_0000;
 
         let pt4 = &mut *self.pt4;
         let pt4_idx = virt_addr / PT3_EXTENT;
@@ -123,9 +123,9 @@ where
 fn map_tables() {
     unsafe {
         let layout = std::alloc::Layout::from_size_align(0x100_0000, 0x1000).unwrap();
-        let memory_addr = std::alloc::alloc(layout.clone()) as PhysicalAddress;
+        let memory_addr = std::alloc::alloc(layout.clone());
 
-        let pt4_addr = (memory_addr) as *mut PageTable;
+        let pt4_addr = memory_addr as *mut PageTable;
 
         let mut current_addr = 0x1000;
 
@@ -135,19 +135,19 @@ fn map_tables() {
                 let result = current_addr;
                 current_addr += 0x1000;
                 println!("ALLOC: {:#x}", result);
-                Ok(result)
+                Ok(result.into())
             },
-            |phys_addr| memory_addr + phys_addr,
+            |phys_addr| (memory_addr as u64 + phys_addr.as_u64()).into(),
         );
 
-        let entry = mapper.entry(0xffff_8000_0000_0000, 1).unwrap();
+        let entry = mapper.entry(0xffff_8000_0000_0000.into(), 1).unwrap();
 
         let pt4 = &mut *pt4_addr;
-        let pt3_addr = (memory_addr + pt4[256].address()) as *mut PageTable;
+        let pt3_addr = (memory_addr as u64 + pt4[256].address().as_u64()) as *mut PageTable;
         let pt3 = &mut *pt3_addr;
-        let pt2_addr = (memory_addr + pt3[0].address()) as *mut PageTable;
+        let pt2_addr = (memory_addr as u64 + pt3[0].address().as_u64()) as *mut PageTable;
         let pt2 = &mut *pt2_addr;
-        let pt1_addr = (memory_addr + pt2[0].address()) as *mut PageTable;
+        let pt1_addr = (memory_addr as u64 + pt2[0].address().as_u64()) as *mut PageTable;
 
         assert_eq!(pt4_addr.offset(1), pt3_addr);
         assert_eq!(pt3_addr.offset(1), pt2_addr);
