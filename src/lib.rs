@@ -9,4 +9,4 @@ pub use result::*;
 mod types;
 pub use types::*;
 
-pub mod amd64;
+pub mod x86_64;
