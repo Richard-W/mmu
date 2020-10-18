@@ -1,3 +1,4 @@
+//! x86_64 specific structures
 use super::*;
 
 mod page_table;
