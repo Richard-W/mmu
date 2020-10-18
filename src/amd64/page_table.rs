@@ -16,16 +16,16 @@ pub struct Entry {
 #[repr(u64)]
 #[derive(Debug, Clone, Copy)]
 pub enum Bit {
-    Present  = 0,
+    Present = 0,
     Writable = 1,
-    User     = 2,
-    Direct   = 3,
-    Nocache  = 4,
+    User = 2,
+    Direct = 3,
+    Nocache = 4,
     Accessed = 5,
-    Dirty    = 6,
-    Huge     = 7,
-    Global   = 8,
-    Noexec   = 63,
+    Dirty = 6,
+    Huge = 7,
+    Global = 8,
+    Noexec = 63,
 }
 
 add_indexing!(PageTable, Entry);
@@ -49,9 +49,7 @@ impl PageTable {
 impl Entry {
     /// Create a new page table entry.
     pub const fn new() -> Self {
-        Entry {
-            entry: 0,
-        }
+        Entry { entry: 0 }
     }
 
     /// Volatile read of the entry.
@@ -63,11 +61,16 @@ impl Entry {
     /// Volatile write of the entry.
     fn write(&mut self, entry: u64) {
         let entry_ptr = &mut self.entry as *mut u64;
-        unsafe { core::ptr::write_volatile(entry_ptr, entry); }
+        unsafe {
+            core::ptr::write_volatile(entry_ptr, entry);
+        }
     }
 
     /// Update the entry value using volatile read/write.
-    fn update<F>(&mut self, f: F) where F: Fn(u64) -> u64 {
+    fn update<F>(&mut self, f: F)
+    where
+        F: Fn(u64) -> u64,
+    {
         self.write(f(self.read()));
     }
 
@@ -85,9 +88,7 @@ impl Entry {
     pub fn set_address(&mut self, address: PhysicalAddress) -> &mut Self {
         assert!(address % 0x1000 == 0);
         assert!(address < 0xfff0_0000_0000_0000);
-        self.update(|entry| {
-            (entry & !0x000ffffffffff000) | address
-        });
+        self.update(|entry| (entry & !0x000ffffffffff000) | address);
         self
     }
 
@@ -101,9 +102,7 @@ impl Entry {
         if val > 7 {
             panic!("Avail value out ouf bounds");
         }
-        self.update(|entry| {
-           (entry & !0x0e00) | ((val as u64) << 9)
-        });
+        self.update(|entry| (entry & !0x0e00) | ((val as u64) << 9));
         self
     }
 
@@ -200,4 +199,3 @@ fn bit_consistency() {
     assert!(entry.bit(Bit::Noexec));
     entry.unset_bit(Bit::Noexec);
 }
-

@@ -1,18 +1,17 @@
 macro_rules! get_bit {
     ($field:expr, $bit:expr) => {
         ($field & (1 << $bit)) > 0
-    }
+    };
 }
 
 macro_rules! set_bit {
     ($field:expr, $bit:expr, $enabled:expr) => {
         if $enabled {
             $field |= 1 << $bit;
-        }
-        else {
+        } else {
             $field &= !(1 << $bit)
         }
-    }
+    };
 }
 
 macro_rules! add_indexing {
@@ -31,6 +30,5 @@ macro_rules! add_indexing {
                 &mut self.entries[index]
             }
         }
-    }
+    };
 }
-
