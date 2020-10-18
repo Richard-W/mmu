@@ -24,15 +24,23 @@ where
     TranslateAddress: FnMut(PhysicalAddress) -> VirtualAddress,
 {
     /// Create a new `RecursiveMapper` object.
+    ///
+    /// # Safety
+    ///
+    /// Safety assumptions:
+    /// * `pt4` is a pointer to a valid free memory page
+    /// * `alloc_frame` returns pointers to valid free memory pages
+    /// * `translate_address` correctly translates physical addresses to virtual addresses
     pub unsafe fn new(
         pt4: *mut PageTable,
         alloc_frame: AllocFrame,
         translate_address: TranslateAddress,
     ) -> Self {
+        assert_eq!(pt4 as u64 % PAGE_SIZE, 0);
         RecursiveMapper {
-            pt4: pt4,
-            alloc_frame: alloc_frame,
-            translate_address: translate_address,
+            pt4,
+            alloc_frame,
+            translate_address,
         }
     }
 
@@ -52,12 +60,10 @@ where
             entry.set_bit(Bit::Writable);
             entry.set_bit(Bit::User);
             Ok(())
+        } else if entry.bit(Bit::Huge) {
+            Err(Error::Overlap)
         } else {
-            if entry.bit(Bit::Huge) {
-                Err(Error::Overlap)
-            } else {
-                Ok(())
-            }
+            Ok(())
         }
     }
 
@@ -69,6 +75,10 @@ where
     }
 
     /// Get the page table entry for a virtual address.
+    ///
+    /// # Safety
+    ///
+    /// Function itself is safe but modifying entries is inherently unsafe.
     pub unsafe fn entry(
         &mut self,
         virt_addr: VirtualAddress,
