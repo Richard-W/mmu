@@ -81,14 +81,14 @@ impl Entry {
 
     /// Physical memory address referenced by this entry.
     pub fn address(&self) -> PhysicalAddress {
-        self.read() & 0x000ffffffffff000
+        (self.read() & 0x000ffffffffff000).into()
     }
 
     /// Set the physical memory address of this entry.
     pub fn set_address(&mut self, address: PhysicalAddress) -> &mut Self {
         assert!(address % 0x1000 == 0);
-        assert!(address < 0xfff0_0000_0000_0000);
-        self.update(|entry| (entry & !0x000ffffffffff000) | address);
+        assert!(address.as_u64() < 0xfff0_0000_0000_0000);
+        self.update(|entry| (entry & !0x000ffffffffff000) | address.as_u64());
         self
     }
 
@@ -135,8 +135,8 @@ impl Entry {
 #[test]
 fn int_consistency() {
     let mut entry = Entry::new();
-    entry.set_address(0x4242000);
-    assert_eq!(entry.address(), 0x4242000);
+    entry.set_address(0x4242000.into());
+    assert_eq!(entry.address().as_u64(), 0x4242000);
 
     entry.set_avail(7);
     assert_eq!(entry.avail(), 7);
@@ -147,7 +147,7 @@ fn int_consistency() {
 #[test]
 fn bit_consistency() {
     let mut entry = Entry::new();
-    entry.set_address(0x000ffffffffff000);
+    entry.set_address(0x000ffffffffff000.into());
     assert!(!entry.bit(Bit::Present));
     assert!(!entry.bit(Bit::Writable));
     assert!(!entry.bit(Bit::User));
