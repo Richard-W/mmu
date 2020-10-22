@@ -7,7 +7,7 @@ const PT1_EXTENT: u64 = PAGE_SIZE * PT_SIZE;
 const PT2_EXTENT: u64 = PT_SIZE * PT1_EXTENT;
 const PT3_EXTENT: u64 = PT_SIZE * PT2_EXTENT;
 
-/// Provides access to page table entries.
+/// Mapper implementation for this architecture
 pub struct RecursiveMapper<AllocFrame, TranslateAddress>
 where
     AllocFrame: FnMut() -> Result<PhysicalAddress>,
@@ -73,17 +73,16 @@ where
         let virt_addr = (self.translate_address)(phys_addr);
         Ok(&mut *(virt_addr.as_u64() as *mut PageTable))
     }
+}
 
-    /// Get the page table entry for a virtual address.
-    ///
-    /// # Safety
-    ///
-    /// Function itself is safe but modifying entries is inherently unsafe.
-    pub unsafe fn entry(
-        &mut self,
-        virt_addr: VirtualAddress,
-        level: u8,
-    ) -> Result<&'static mut Entry> {
+impl<AllocFrame, TranslateAddress> Mapper for RecursiveMapper<AllocFrame, TranslateAddress>
+where
+    AllocFrame: FnMut() -> Result<PhysicalAddress>,
+    TranslateAddress: FnMut(PhysicalAddress) -> VirtualAddress,
+{
+    type Entry = Entry;
+
+    unsafe fn entry(&mut self, virt_addr: VirtualAddress, level: u8) -> Result<&'static mut Entry> {
         assert!(!(level < 1 && level > 4));
         assert!(level != 1 || virt_addr % PAGE_SIZE == 0);
         assert!(level != 2 || virt_addr % PT1_EXTENT == 0);
